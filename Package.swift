@@ -28,6 +28,7 @@ let package = Package(
             sources: [
                 "TelemetryEvent.swift",
                 "DailyUsageStore.swift",
+                "CodexRolloutReader.swift",
                 "TelemetryQueue.swift",
                 "SetupManager.swift"
             ]

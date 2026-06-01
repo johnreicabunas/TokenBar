@@ -8,6 +8,16 @@ final class UsageViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let provider: UsageProvider = LocalUsageProvider()
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        TelemetryService.shared.$summaries
+            .dropFirst()
+            .sink { [weak self] _ in
+                Task { await self?.loadSummaries() }
+            }
+            .store(in: &cancellables)
+    }
 
     var totalTokens: Int {
         summaries.reduce(0) { $0 + $1.totalTokens }
@@ -28,14 +38,17 @@ final class UsageViewModel: ObservableObject {
     func refresh() async {
         isLoading = true
         errorMessage = nil
+        TelemetryService.shared.reconcile()
+        await loadSummaries()
+        isLoading = false
+    }
 
+    private func loadSummaries() async {
         do {
             summaries = try await provider.fetchTodayUsage()
         } catch {
             errorMessage = error.localizedDescription
         }
-
-        isLoading = false
     }
 
     func startMonitoring() {

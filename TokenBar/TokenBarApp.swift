@@ -24,9 +24,10 @@ struct TokenBarApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Settings {
+        Window("TokenBar Setup", id: "setup") {
             SettingsView()
                 .environmentObject(viewModel)
         }
+        .windowResizability(.contentSize)
     }
 }

@@ -10,6 +10,8 @@ final class TelemetryService: ObservableObject {
 
     private let store: DailyUsageStore
     private let queue: TelemetryQueue
+    private let codexReader: CodexRolloutReader
+    private let installationDate: Date
     private var server: LocalTelemetryServer?
     private var reconciliationTask: Task<Void, Never>?
 
@@ -17,13 +19,16 @@ final class TelemetryService: ObservableObject {
         let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tokenbar")
         let defaults = UserDefaults.standard
         let key = "TokenBar.installationDate"
-        let installationDate = defaults.object(forKey: key) as? Date ?? Date()
+        installationDate = defaults.object(forKey: key) as? Date ?? Date()
         defaults.set(installationDate, forKey: key)
         store = DailyUsageStore(
             installationDate: installationDate,
             fileURL: root.appendingPathComponent("events.json")
         )
         queue = TelemetryQueue(fileURL: root.appendingPathComponent("events.jsonl"))
+        codexReader = CodexRolloutReader(
+            codexHome: FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".codex")
+        )
         refresh()
     }
 
@@ -33,11 +38,11 @@ final class TelemetryService: ObservableObject {
             Task { @MainActor in self?.record(event) }
         }
         server?.start()
-        drainQueue()
+        reconcile()
         reconciliationTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
-                self?.drainQueue()
+                self?.reconcile()
             }
         }
     }
@@ -56,6 +61,12 @@ final class TelemetryService: ObservableObject {
         } catch {
             lastError = "Could not read queued telemetry: \(error.localizedDescription)"
         }
+    }
+
+    func reconcile() {
+        drainQueue()
+        codexReader.events(since: installationDate).forEach(store.replace)
+        refresh()
     }
 
     func refresh() {

@@ -26,4 +26,14 @@ final class DailyUsageStoreTests: XCTestCase {
         XCTAssertEqual(summary?.projectNames, ["Notes", "TokenBar"])
         XCTAssertEqual(summary?.isEstimated, true)
     }
+
+    func testReplaceUpdatesSnapshotWithoutDoubleCounting() {
+        let store = DailyUsageStore(installationDate: .distantPast)
+        store.replace(.fixture(id: "codex-session", provider: .codex, input: 10))
+        store.replace(.fixture(id: "codex-session", provider: .codex, input: 25))
+
+        let summary = store.summaries(for: Date(timeIntervalSince1970: 110)).first
+
+        XCTAssertEqual(summary?.inputTokens, 25)
+    }
 }

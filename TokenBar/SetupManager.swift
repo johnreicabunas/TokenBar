@@ -42,8 +42,8 @@ final class SetupManager {
         - Cursor token totals are marked Estimated when exact values are unavailable.
 
         Codex (experimental)
-        - Adds a notify command in ~/.codex/config.toml.
-        - Compatibility depends on the installed Codex version.
+        - Reads structured local rollout token events from ~/.codex/sessions.
+        - Leaves your existing Codex notifier unchanged.
 
         Events are sent to http://127.0.0.1:47831/events or queued locally when TokenBar is closed.
         """
@@ -55,8 +55,8 @@ final class SetupManager {
         2. Install \(bridgeURL.path) as an executable script.
         3. Configure Claude Code statusLine to run: \(bridgeURL.path) claude
         4. Configure Cursor hooks to run: \(bridgeURL.path) cursor
-        5. Configure Codex notify to run: \(bridgeURL.path) codex
-        6. Start TokenBar and use Refresh to drain queued events.
+        5. Codex rollout monitoring requires no configuration change.
+        6. Start TokenBar and use Refresh to reconcile local events.
         """
     }
 
@@ -66,20 +66,13 @@ final class SetupManager {
         try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: bridgeURL.path)
         try mergeClaudeSettings()
         try mergeCursorSettings()
-        try mergeCodexSettings()
+        try removeLegacyCodexBridge()
     }
 
     func uninstall() throws {
         try restoreBackupIfPresent(for: claudeSettingsURL)
         try restoreBackupIfPresent(for: cursorSettingsURL)
-        let codexURL = codexSettingsURL
-        guard fileManager.fileExists(atPath: codexURL.path) else { return }
-        let text = try String(contentsOf: codexURL, encoding: .utf8)
-        let cleaned = text.replacingOccurrences(
-            of: "\n# TokenBar experimental bridge\nnotify = [\"\(bridgeURL.path)\", \"codex\"]\n",
-            with: ""
-        )
-        try Data(cleaned.utf8).write(to: codexURL, options: .atomic)
+        try removeLegacyCodexBridge()
     }
 
     func status() -> SetupStatus {
@@ -126,14 +119,15 @@ final class SetupManager {
         try write(settings, to: cursorSettingsURL)
     }
 
-    private func mergeCodexSettings() throws {
-        try fileManager.createDirectory(at: codexSettingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let marker = "# TokenBar experimental bridge"
-        let existing = (try? String(contentsOf: codexSettingsURL, encoding: .utf8)) ?? ""
-        guard !existing.contains(marker) else { return }
-        try backupIfPresent(codexSettingsURL)
-        let addition = "\n\(marker)\nnotify = [\"\(bridgeURL.path)\", \"codex\"]\n"
-        try Data((existing + addition).utf8).write(to: codexSettingsURL, options: .atomic)
+    private func removeLegacyCodexBridge() throws {
+        guard fileManager.fileExists(atPath: codexSettingsURL.path) else { return }
+        let text = try String(contentsOf: codexSettingsURL, encoding: .utf8)
+        let cleaned = text.replacingOccurrences(
+            of: "\n# TokenBar experimental bridge\nnotify = [\"\(bridgeURL.path)\", \"codex\"]\n",
+            with: ""
+        )
+        guard cleaned != text else { return }
+        try Data(cleaned.utf8).write(to: codexSettingsURL, options: .atomic)
     }
 
     private func jsonObject(at url: URL) throws -> [String: Any] {

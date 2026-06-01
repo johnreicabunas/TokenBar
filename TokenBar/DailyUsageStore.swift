@@ -38,6 +38,12 @@ final class DailyUsageStore {
         return true
     }
 
+    func replace(_ event: TelemetryEvent) {
+        guard event.timestamp >= installationDate else { return }
+        events[event.id] = event
+        persist()
+    }
+
     func summaries(for date: Date = Date()) -> [AgentUsageSummary] {
         AgentProvider.allCases.compactMap { provider in
             let matching = events.values.filter {

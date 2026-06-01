@@ -12,7 +12,7 @@ struct LocalUsageProvider: UsageProvider {
                 cachedTokens: summary?.cachedTokens ?? 0,
                 projectNames: summary?.projectNames ?? [],
                 isEstimated: summary?.isEstimated ?? (provider == .cursor),
-                connectionStatus: provider == .codex ? "Experimental bridge" : "Listening locally"
+                connectionStatus: provider == .codex ? "Structured local events" : "Listening locally"
             )
         }
     }

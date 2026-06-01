@@ -34,6 +34,18 @@ final class SetupManagerTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: cursorURL.path + ".tokenbar-backup"))
     }
 
+    func testInstallDoesNotModifyCodexConfiguration() throws {
+        let root = temporaryDirectory()
+        let codexURL = root.appendingPathComponent(".codex/config.toml")
+        try FileManager.default.createDirectory(at: codexURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let original = "notify = [\"existing-notifier\", \"turn-ended\"]\n\n[features]\nmemories = false\n"
+        try Data(original.utf8).write(to: codexURL)
+
+        try SetupManager(rootDirectory: root).install()
+
+        XCTAssertEqual(try String(contentsOf: codexURL, encoding: .utf8), original)
+    }
+
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     }

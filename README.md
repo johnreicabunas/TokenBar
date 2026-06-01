@@ -8,7 +8,7 @@ TokenBar is a native macOS menu-bar app for local-only coding-agent token monito
 | --- | --- | --- |
 | Claude Code | Supported | Uses status-line JSON for exact token values when available. |
 | Cursor | Supported | Uses local hooks. Token values are labeled `Estimated` when Cursor does not expose exact accounting. |
-| Codex | Experimental | Uses a local notify bridge. Compatibility depends on the installed Codex version while the upstream app-server surface remains experimental. |
+| Codex | Supported locally | Reconciles structured rollout token events from `~/.codex/sessions` without replacing your existing Codex notifier. |
 
 ## Privacy
 
@@ -43,7 +43,7 @@ Guided setup creates backups before changing existing Claude Code and Cursor con
 
 ## How It Works
 
-1. Agent hooks invoke a TokenBar-owned bridge script.
+1. Claude Code and Cursor hooks invoke a TokenBar-owned bridge script. Codex is reconciled from structured local rollout events.
 2. The bridge sends a normalized JSON event to the localhost receiver.
 3. If TokenBar is closed, the bridge writes the event to a local queue.
 4. TokenBar drains queued events on launch and reconciles every 30 seconds.
