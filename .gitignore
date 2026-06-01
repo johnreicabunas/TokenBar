@@ -1,0 +1,10 @@
+.DS_Store
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+TokenBar.xcodeproj/xcuserdata/
+.swiftpm/
+
+# TokenBar local telemetry and generated bridges
+.tokenbar/

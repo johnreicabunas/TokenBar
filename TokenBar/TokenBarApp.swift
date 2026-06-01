@@ -1,17 +1,32 @@
-//
-//  TokenBarApp.swift
-//  TokenBar
-//
-//  Created by John Rei Cabunas on 5/29/26.
-//
-
 import SwiftUI
 
 @main
 struct TokenBarApp: App {
+    @StateObject private var viewModel = UsageViewModel()
+
+    init() {
+        TelemetryService.shared.start()
+    }
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra {
+            MenuBarView()
+                .environmentObject(viewModel)
+                .task {
+                    viewModel.startMonitoring()
+                    await viewModel.refresh()
+                }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "bolt.circle.fill")
+                Text(viewModel.menuBarTitle)
+            }
+        }
+        .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsView()
+                .environmentObject(viewModel)
         }
     }
 }
